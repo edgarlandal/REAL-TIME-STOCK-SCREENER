@@ -1,0 +1,37 @@
+export interface Stock {
+  symbol: string;
+  name: string;
+  sector: string;
+  industry: string;
+  marketCapCategory: "large-cap" | "mid-cap" | "small-cap" | "micro-cap";
+  price: number;
+  ltp: number;
+  change: number;
+  changePercent: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  avgVolume30: number;
+  fiftyTwoWeekHigh: number;
+  fiftyTwoWeekLow: number;
+  pe: number;
+  pb: number;
+  roe: number;
+  roce: number;
+  debtToEquity: number;
+  dividendYield: number;
+  eps: number;
+  promoterHolding: number;
+  freeCashFlow: number;
+  rsi14: number;
+  sma20: number;
+  sma50: number;
+  sma200: number;
+  macd: number;
+  macdSignal: number;
+  volumeProfilePeak: number;
+  isWatchlist: boolean;
+  lastUpdated: Date;
+}
