@@ -1,6 +1,11 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getReconnectDelay, useWebSocket, type WebSocketLike } from "./useWebSocket";
+import {
+  getReconnectDelay,
+  getScheduledReconnectDelay,
+  useWebSocket,
+  type WebSocketLike,
+} from "./useWebSocket";
 
 class MockWebSocket implements WebSocketLike {
   readyState: number = WebSocket.CONNECTING;
@@ -28,6 +33,14 @@ describe("useWebSocket", () => {
     expect(getReconnectDelay(500, 30_000, 0)).toBe(500);
     expect(getReconnectDelay(500, 30_000, 3)).toBe(4_000);
     expect(getReconnectDelay(500, 30_000, 9_999)).toBe(30_000);
+  });
+
+  it("uses the last scheduled delay when retries exceed the configured delay array", () => {
+    const delays = [100, 250, 500];
+
+    expect(getScheduledReconnectDelay(delays, 0)).toBe(100);
+    expect(getScheduledReconnectDelay(delays, 2)).toBe(500);
+    expect(getScheduledReconnectDelay(delays, 999)).toBe(500);
   });
 
   it("reconnects after a closed connection and resets retries on open", () => {

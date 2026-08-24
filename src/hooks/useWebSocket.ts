@@ -18,6 +18,7 @@ export interface WebSocketLike {
 export interface UseWebSocketOptions {
   baseDelay?: number;
   maxDelay?: number;
+  reconnectDelays?: readonly number[];
   webSocketFactory?: (url: string) => WebSocketLike;
   onMessage?: (message: WSMessage) => void;
 }
@@ -34,6 +35,21 @@ export function getReconnectDelay(baseDelay: number, maxDelay: number, retryCoun
   return Math.min(maxDelay, baseDelay * Math.pow(2, safeRetryCount));
 }
 
+export function getScheduledReconnectDelay(reconnectDelays: readonly number[], retryCount: number): number {
+  if (reconnectDelays.length === 0) {
+    throw new RangeError("reconnectDelays must contain at least one delay");
+  }
+
+  const safeIndex = Math.min(Math.max(retryCount, 0), reconnectDelays.length - 1);
+  const delay = reconnectDelays[safeIndex];
+
+  if (!Number.isFinite(delay) || delay < 0) {
+    throw new RangeError("reconnectDelays must contain finite non-negative delays");
+  }
+
+  return delay;
+}
+
 export function useWebSocket(url: string, options: UseWebSocketOptions = {}): UseWebSocketResult {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("DISCONNECTED");
   const [retryCount, setRetryCount] = useState(0);
@@ -44,6 +60,7 @@ export function useWebSocket(url: string, options: UseWebSocketOptions = {}): Us
   const onMessageRef = useRef(options.onMessage);
   const baseDelay = options.baseDelay ?? 500;
   const maxDelay = options.maxDelay ?? 30_000;
+  const reconnectDelays = options.reconnectDelays;
   const factoryRef = useRef<(socketUrl: string) => WebSocketLike>(
     options.webSocketFactory ?? ((socketUrl) => new WebSocket(socketUrl)),
   );
@@ -134,7 +151,10 @@ export function useWebSocket(url: string, options: UseWebSocketOptions = {}): Us
         return;
       }
 
-      const delay = getReconnectDelay(baseDelay, maxDelay, retryCountRef.current);
+      const delay =
+        reconnectDelays === undefined
+          ? getReconnectDelay(baseDelay, maxDelay, retryCountRef.current)
+          : getScheduledReconnectDelay(reconnectDelays, retryCountRef.current);
       retryCountRef.current = Math.min(retryCountRef.current + 1, MAX_BACKOFF_EXPONENT);
       setRetryCount(retryCountRef.current);
       setConnectionStatus("RECONNECTING");
@@ -157,7 +177,7 @@ export function useWebSocket(url: string, options: UseWebSocketOptions = {}): Us
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [baseDelay, maxDelay, url]);
+  }, [baseDelay, maxDelay, reconnectDelays, url]);
 
   return { connectionStatus, retryCount, send, disconnect };
 }
