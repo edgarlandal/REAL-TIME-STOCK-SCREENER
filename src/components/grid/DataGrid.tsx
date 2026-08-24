@@ -46,7 +46,7 @@ export function DataGrid({ data, columns = stockColumns, height = 600 }: DataGri
   return (
     <div
       ref={scrollContainerRef}
-      className="relative w-full overflow-auto border border-white/10 bg-financial-card"
+      className="data-grid relative w-full overflow-auto border border-white/10 bg-financial-card"
       style={{ height, minHeight: height }}
     >
       <table className="grid min-w-max w-full border-collapse text-sm text-zinc-100">
@@ -57,8 +57,13 @@ export function DataGrid({ data, columns = stockColumns, height = 600 }: DataGri
               className="grid h-9 items-center"
               style={{ gridTemplateColumns }}
             >
-              {headerGroup.headers.map((header) => (
-                <th key={header.id} className="overflow-hidden px-3 text-left align-middle">
+              {headerGroup.headers.map((header, index) => (
+                <th
+                  key={header.id}
+                  className={`overflow-hidden px-3 text-left align-middle${
+                    index === 0 ? " data-grid-pinned-header" : ""
+                  }`}
+                >
                   {header.isPlaceholder
                     ? null
                     : flexRender(header.column.columnDef.header, header.getContext())}
@@ -84,8 +89,13 @@ export function DataGrid({ data, columns = stockColumns, height = 600 }: DataGri
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
               >
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="overflow-hidden px-3 whitespace-nowrap text-ellipsis">
+                {row.getVisibleCells().map((cell, index) => (
+                  <td
+                    key={cell.id}
+                    className={`overflow-hidden px-3 whitespace-nowrap text-ellipsis${
+                      index === 0 ? " data-grid-pinned-cell" : ""
+                    }`}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
