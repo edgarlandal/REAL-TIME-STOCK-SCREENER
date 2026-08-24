@@ -2,6 +2,12 @@
 
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import type { ColumnDef, HeaderContext } from "@tanstack/react-table";
+import {
+  CompactNumberCell,
+  CurrencyCell,
+  PercentageCell,
+  SectorBadge,
+} from "@/components/grid/CellRenderers";
 import type { Stock } from "@/types/stock";
 
 type NumericStockField = {
@@ -53,7 +59,8 @@ function textColumn(accessorKey: TextStockField, label: string): ColumnDef<Stock
   return {
     accessorKey,
     header: sortableHeader(label),
-    cell: ({ getValue }) => getValue<string>(),
+    cell: ({ getValue }) =>
+      accessorKey === "sector" ? <SectorBadge sector={getValue<string>()} /> : getValue<string>(),
   };
 }
 
@@ -78,26 +85,58 @@ export const stockColumns: ColumnDef<Stock>[] = [
   textColumn("marketCapCategory", "Market Cap"),
   numericColumn("price", "Price", currencyFormatter),
   numericColumn("ltp", "LTP", currencyFormatter),
-  numericColumn("change", "Change", currencyFormatter),
-  numericColumn("changePercent", "Change %", decimalFormatter, "%"),
+  {
+    accessorKey: "change",
+    header: sortableHeader("Change"),
+    cell: ({ getValue }) => <CurrencyCell value={getValue<number>()} />,
+  },
+  {
+    accessorKey: "changePercent",
+    header: sortableHeader("Change %"),
+    cell: ({ getValue }) => <PercentageCell value={getValue<number>()} />,
+  },
   numericColumn("open", "Open", currencyFormatter),
   numericColumn("high", "High", currencyFormatter),
   numericColumn("low", "Low", currencyFormatter),
   numericColumn("close", "Close", currencyFormatter),
-  numericColumn("volume", "Volume", compactFormatter),
-  numericColumn("avgVolume30", "Avg Volume 30D", compactFormatter),
+  {
+    accessorKey: "volume",
+    header: sortableHeader("Volume"),
+    cell: ({ getValue }) => <CompactNumberCell value={getValue<number>()} />,
+  },
+  {
+    accessorKey: "avgVolume30",
+    header: sortableHeader("Avg Volume 30D"),
+    cell: ({ getValue }) => <CompactNumberCell value={getValue<number>()} />,
+  },
   numericColumn("fiftyTwoWeekHigh", "52W High", currencyFormatter),
   numericColumn("fiftyTwoWeekLow", "52W Low", currencyFormatter),
   numericColumn("pe", "P/E"),
   numericColumn("pb", "P/B"),
-  numericColumn("roe", "ROE", decimalFormatter, "%"),
-  numericColumn("roce", "ROCE", decimalFormatter, "%"),
+  {
+    accessorKey: "roe",
+    header: sortableHeader("ROE"),
+    cell: ({ getValue }) => <PercentageCell value={getValue<number>()} showSign={false} />,
+  },
+  {
+    accessorKey: "roce",
+    header: sortableHeader("ROCE"),
+    cell: ({ getValue }) => <PercentageCell value={getValue<number>()} showSign={false} />,
+  },
   numericColumn("debtToEquity", "Debt/Equity"),
   numericColumn("dividendYield", "Dividend Yield", decimalFormatter, "%"),
   numericColumn("eps", "EPS", currencyFormatter),
   numericColumn("promoterHolding", "Promoter Holding", decimalFormatter, "%"),
-  numericColumn("freeCashFlow", "Free Cash Flow", compactFormatter),
-  numericColumn("salesGrowth", "Sales Growth", decimalFormatter, "%"),
+  {
+    accessorKey: "freeCashFlow",
+    header: sortableHeader("Free Cash Flow"),
+    cell: ({ getValue }) => <CompactNumberCell value={getValue<number>()} />,
+  },
+  {
+    accessorKey: "salesGrowth",
+    header: sortableHeader("Sales Growth"),
+    cell: ({ getValue }) => <PercentageCell value={getValue<number>()} />,
+  },
   numericColumn("rsi14", "RSI 14"),
   numericColumn("sma20", "SMA 20", currencyFormatter),
   numericColumn("sma50", "SMA 50", currencyFormatter),
