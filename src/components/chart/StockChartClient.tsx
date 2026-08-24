@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import {
   ColorType,
   createChart,
@@ -22,6 +22,7 @@ interface StockChartClientProps {
   height: number;
   overlays: StockChartOverlays;
   onVisibleRangeChange: (range: ChartLogicalRange | null) => void;
+  captureRef: MutableRefObject<(() => void) | null>;
 }
 
 interface VolumeProfileBar {
@@ -56,7 +57,7 @@ function toLineData(data: Array<{ time: number; value: number | null }>): LineDa
   return lineData;
 }
 
-export function StockChartClient({ data, height, overlays, onVisibleRangeChange }: StockChartClientProps) {
+export function StockChartClient({ data, height, overlays, onVisibleRangeChange, captureRef }: StockChartClientProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -149,6 +150,14 @@ export function StockChartClient({ data, height, overlays, onVisibleRangeChange 
     const handleVisibleRangeChange = (range: LogicalRange | null): void => {
       onVisibleRangeChange(range === null ? null : { from: range.from, to: range.to });
     };
+    const saveScreenshot = (): void => {
+      const image = chart.takeScreenshot();
+      const link = document.createElement("a");
+
+      link.download = `stock-chart-${Date.now()}.png`;
+      link.href = image.toDataURL("image/png");
+      link.click();
+    };
 
     chartRef.current = chart;
     seriesRef.current = series;
@@ -159,6 +168,7 @@ export function StockChartClient({ data, height, overlays, onVisibleRangeChange 
     bollingerMiddleSeriesRef.current = bollingerMiddleSeries;
     bollingerLowerSeriesRef.current = bollingerLowerSeries;
     profileProjectionRef.current = projectVolumeProfile;
+    captureRef.current = saveScreenshot;
     resizeObserver.observe(container);
     chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
 
@@ -171,6 +181,7 @@ export function StockChartClient({ data, height, overlays, onVisibleRangeChange 
       }
 
       profileProjectionRef.current = () => undefined;
+      captureRef.current = null;
       seriesRef.current = null;
       sma20SeriesRef.current = null;
       sma50SeriesRef.current = null;
@@ -181,7 +192,7 @@ export function StockChartClient({ data, height, overlays, onVisibleRangeChange 
       chartRef.current = null;
       chart.remove();
     };
-  }, [height, onVisibleRangeChange]);
+  }, [captureRef, height, onVisibleRangeChange]);
 
   useEffect(() => {
     seriesRef.current?.setData(toChartData(data));

@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { ChartControls, type ChartTimeframe } from "@/components/chart/ChartControls";
 import type { CandleData } from "@/types/chart";
 import { RSIChart } from "@/components/chart/RSIChart";
 
@@ -20,6 +21,7 @@ export interface ChartLogicalRange {
 interface StockChartProps {
   data: CandleData[];
   height?: number;
+  onTimeframeChange?: (timeframe: ChartTimeframe) => void;
 }
 
 const StockChartClient = dynamic(
@@ -36,7 +38,7 @@ const StockChartClient = dynamic(
   },
 );
 
-export function StockChart({ data, height = 420 }: StockChartProps) {
+export function StockChart({ data, height = 420, onTimeframeChange }: StockChartProps) {
   const [overlays, setOverlays] = useState<StockChartOverlays>({
     sma20: false,
     sma50: false,
@@ -44,6 +46,8 @@ export function StockChart({ data, height = 420 }: StockChartProps) {
     bollinger: false,
   });
   const [visibleRange, setVisibleRange] = useState<ChartLogicalRange | null>(null);
+  const [timeframe, setTimeframe] = useState<ChartTimeframe>("1D");
+  const captureRef = useRef<(() => void) | null>(null);
 
   function toggleOverlay(overlay: keyof StockChartOverlays): void {
     setOverlays((currentOverlays) => ({
@@ -52,8 +56,19 @@ export function StockChart({ data, height = 420 }: StockChartProps) {
     }));
   }
 
+  function changeTimeframe(nextTimeframe: ChartTimeframe): void {
+    setTimeframe(nextTimeframe);
+    onTimeframeChange?.(nextTimeframe);
+  }
+
   return (
     <section className="w-full" aria-label="Gráfico de precios">
+      <ChartControls
+        timeframe={timeframe}
+        activeCandle={data[data.length - 1]}
+        onTimeframeChange={changeTimeframe}
+        onSaveScreenshot={() => captureRef.current?.()}
+      />
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <OverlayToggle label="SMA 20" enabled={overlays.sma20} onClick={() => toggleOverlay("sma20")} />
         <OverlayToggle label="SMA 50" enabled={overlays.sma50} onClick={() => toggleOverlay("sma50")} />
@@ -69,6 +84,7 @@ export function StockChart({ data, height = 420 }: StockChartProps) {
         height={height}
         overlays={overlays}
         onVisibleRangeChange={setVisibleRange}
+        captureRef={captureRef}
       />
       <RSIChart data={data} visibleRange={visibleRange} />
     </section>
