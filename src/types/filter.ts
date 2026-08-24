@@ -38,6 +38,7 @@ export type FilterField =
   | "eps"
   | "promoterHolding"
   | "freeCashFlow"
+  | "salesGrowth"
   | "rsi14"
   | "sma20"
   | "sma50"
@@ -61,14 +62,29 @@ export interface BooleanFilter {
   value: boolean;
 }
 
-export type FilterOperator = "between" | "in" | "equals";
+export interface NumericFilter {
+  value: number;
+}
+
+export interface FieldComparisonFilter {
+  field: FilterField;
+  multiplier: number;
+}
+
+export type FilterOperator =
+  | "between"
+  | "in"
+  | "equals"
+  | "lessThan"
+  | "greaterThan"
+  | "greaterThanField";
 
 export interface FilterCondition {
   id: string;
   field: FilterField;
   category: FilterCategory;
   operator: FilterOperator;
-  filter: RangeFilter | MultiSelectFilter | BooleanFilter;
+  filter: RangeFilter | MultiSelectFilter | BooleanFilter | NumericFilter | FieldComparisonFilter;
 }
 
 export interface FilterGroup {
@@ -92,7 +108,7 @@ export const FILTER_FIELDS_BY_CATEGORY: Record<FilterCategory, readonly FilterFi
   volume: ["volume", "avgVolume30", "volumeProfilePeak"],
   "price-range": ["fiftyTwoWeekHigh", "fiftyTwoWeekLow"],
   valuation: ["pe", "pb", "dividendYield", "eps"],
-  profitability: ["roe", "roce", "freeCashFlow"],
+  profitability: ["roe", "roce", "freeCashFlow", "salesGrowth"],
   "financial-health": ["debtToEquity"],
   ownership: ["promoterHolding"],
   technical: ["rsi14", "sma20", "sma50", "sma200", "macd", "macdSignal"],
