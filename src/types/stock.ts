@@ -36,3 +36,39 @@ export interface Stock {
   isWatchlist: boolean;
   lastUpdated: Date;
 }
+
+export type StockNumericField = {
+  [Key in keyof Stock]: Stock[Key] extends number ? Key : never;
+}[keyof Stock];
+
+export const STOCK_NUMERIC_FIELDS: readonly StockNumericField[] = [
+  "price",
+  "ltp",
+  "change",
+  "changePercent",
+  "open",
+  "high",
+  "low",
+  "close",
+  "volume",
+  "avgVolume30",
+  "fiftyTwoWeekHigh",
+  "fiftyTwoWeekLow",
+  "pe",
+  "pb",
+  "roe",
+  "roce",
+  "debtToEquity",
+  "dividendYield",
+  "eps",
+  "promoterHolding",
+  "freeCashFlow",
+  "salesGrowth",
+  "rsi14",
+  "sma20",
+  "sma50",
+  "sma200",
+  "macd",
+  "macdSignal",
+  "volumeProfilePeak",
+];
