@@ -20,6 +20,17 @@ describe("calculateVolumeProfile", () => {
     expect(profile.reduce((total, bin) => total + bin.volume, 0)).toBe(200);
   });
 
+  it("accumulates volume by price range and selects the highest-volume range as the POC", () => {
+    const profile = calculateVolumeProfile(
+      [createCandle(0, 1, 100), createCandle(1, 2, 250), createCandle(2, 3, 150)],
+      3,
+    );
+
+    expect(profile.map(({ volume }) => volume)).toEqual([100, 250, 150]);
+    expect(profile.map(({ isPOC }) => isPOC)).toEqual([false, true, false]);
+    expect(profile.filter(({ isPOC }) => isPOC)).toHaveLength(1);
+  });
+
   it("assigns a zero-range candle to its containing bin", () => {
     const profile = calculateVolumeProfile([createCandle(10, 10, 250)]);
 
