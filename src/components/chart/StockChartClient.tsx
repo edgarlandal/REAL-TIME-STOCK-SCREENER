@@ -8,15 +8,18 @@ import {
   type IChartApi,
   type ISeriesApi,
   type LineData,
+  type LogicalRange,
   type UTCTimestamp,
 } from "lightweight-charts";
 import { calculateBollingerBands } from "@/lib/indicators/bollinger";
 import { calculateSMA } from "@/lib/indicators/sma";
+import type { ChartLogicalRange } from "./StockChart";
 import type { CandleData } from "@/types/chart";
 import type { StockChartOverlays } from "./StockChart";
 
 interface StockChartClientProps {
   data: CandleData[];
+  onVisibleRangeChange: (range: ChartLogicalRange | null) => void;
   height: number;
   overlays: StockChartOverlays;
 }
@@ -45,7 +48,7 @@ function toLineData(data: Array<{ time: number; value: number | null }>): LineDa
   return lineData;
 }
 
-export function StockChartClient({ data, height, overlays }: StockChartClientProps) {
+export function StockChartClient({ data, height, overlays, onVisibleRangeChange }: StockChartClientProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -94,6 +97,9 @@ export function StockChartClient({ data, height, overlays }: StockChartClientPro
     const resizeObserver = new ResizeObserver(([entry]) => {
       chart.applyOptions({ width: entry.contentRect.width, height });
     });
+    const handleVisibleRangeChange = (range: LogicalRange | null): void => {
+      onVisibleRangeChange(range === null ? null : { from: range.from, to: range.to });
+    };
 
     chartRef.current = chart;
     seriesRef.current = series;
@@ -104,9 +110,11 @@ export function StockChartClient({ data, height, overlays }: StockChartClientPro
     bollingerMiddleSeriesRef.current = bollingerMiddleSeries;
     bollingerLowerSeriesRef.current = bollingerLowerSeries;
     resizeObserver.observe(container);
+    chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
 
     return () => {
       resizeObserver.disconnect();
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
       seriesRef.current = null;
       sma20SeriesRef.current = null;
       sma50SeriesRef.current = null;
@@ -117,7 +125,7 @@ export function StockChartClient({ data, height, overlays }: StockChartClientPro
       chartRef.current = null;
       chart.remove();
     };
-  }, [height]);
+  }, [height, onVisibleRangeChange]);
 
   useEffect(() => {
     seriesRef.current?.setData(toChartData(data));

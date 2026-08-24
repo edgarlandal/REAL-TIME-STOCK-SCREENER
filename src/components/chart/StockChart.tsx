@@ -3,12 +3,18 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import type { CandleData } from "@/types/chart";
+import { RSIChart } from "@/components/chart/RSIChart";
 
 export interface StockChartOverlays {
   sma20: boolean;
   sma50: boolean;
   sma200: boolean;
   bollinger: boolean;
+}
+
+export interface ChartLogicalRange {
+  from: number;
+  to: number;
 }
 
 interface StockChartProps {
@@ -37,6 +43,7 @@ export function StockChart({ data, height = 420 }: StockChartProps) {
     sma200: false,
     bollinger: false,
   });
+  const [visibleRange, setVisibleRange] = useState<ChartLogicalRange | null>(null);
 
   function toggleOverlay(overlay: keyof StockChartOverlays): void {
     setOverlays((currentOverlays) => ({
@@ -57,7 +64,13 @@ export function StockChart({ data, height = 420 }: StockChartProps) {
           onClick={() => toggleOverlay("bollinger")}
         />
       </div>
-      <StockChartClient data={data} height={height} overlays={overlays} />
+      <StockChartClient
+        data={data}
+        height={height}
+        overlays={overlays}
+        onVisibleRangeChange={setVisibleRange}
+      />
+      <RSIChart data={data} visibleRange={visibleRange} />
     </section>
   );
 }
