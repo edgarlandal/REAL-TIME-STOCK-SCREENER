@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ColorType,
   createChart,
@@ -13,15 +13,23 @@ import {
 } from "lightweight-charts";
 import { calculateBollingerBands } from "@/lib/indicators/bollinger";
 import { calculateSMA } from "@/lib/indicators/sma";
-import type { ChartLogicalRange } from "./StockChart";
-import type { CandleData } from "@/types/chart";
-import type { StockChartOverlays } from "./StockChart";
+import { calculateVolumeProfile } from "@/lib/indicators/volumeProfile";
+import type { CandleData, VolumeProfileBin } from "@/types/chart";
+import type { ChartLogicalRange, StockChartOverlays } from "./StockChart";
 
 interface StockChartClientProps {
   data: CandleData[];
-  onVisibleRangeChange: (range: ChartLogicalRange | null) => void;
   height: number;
   overlays: StockChartOverlays;
+  onVisibleRangeChange: (range: ChartLogicalRange | null) => void;
+}
+
+interface VolumeProfileBar {
+  id: string;
+  top: number;
+  height: number;
+  widthPercent: number;
+  isPOC: boolean;
 }
 
 function toChartData(data: CandleData[]): CandlestickData[] {
@@ -58,6 +66,9 @@ export function StockChartClient({ data, height, overlays, onVisibleRangeChange 
   const bollingerUpperSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const bollingerMiddleSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const bollingerLowerSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const profileBinsRef = useRef<VolumeProfileBin[]>([]);
+  const profileProjectionRef = useRef<() => void>(() => undefined);
+  const [volumeProfileBars, setVolumeProfileBars] = useState<VolumeProfileBar[]>([]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -94,8 +105,46 @@ export function StockChartClient({ data, height, overlays, onVisibleRangeChange 
     const bollingerUpperSeries = chart.addLineSeries({ color: "#94a3b8", lineWidth: 1, visible: false });
     const bollingerMiddleSeries = chart.addLineSeries({ color: "#64748b", lineWidth: 1, visible: false });
     const bollingerLowerSeries = chart.addLineSeries({ color: "#94a3b8", lineWidth: 1, visible: false });
+    let animationFrame: number | undefined;
+    const projectVolumeProfile = (): void => {
+      if (animationFrame !== undefined) {
+        cancelAnimationFrame(animationFrame);
+      }
+
+      animationFrame = requestAnimationFrame(() => {
+        const maxVolume = profileBinsRef.current.reduce(
+          (highestVolume, bin) => Math.max(highestVolume, bin.volume),
+          0,
+        );
+        const profileBars: VolumeProfileBar[] = [];
+
+        if (maxVolume > 0) {
+          for (let index = 0; index < profileBinsRef.current.length; index += 1) {
+            const bin = profileBinsRef.current[index];
+            const upperCoordinate = series.priceToCoordinate(bin.priceMax);
+            const lowerCoordinate = series.priceToCoordinate(bin.priceMin);
+
+            if (upperCoordinate === null || lowerCoordinate === null) {
+              continue;
+            }
+
+            profileBars.push({
+              id: `${bin.priceMin}-${bin.priceMax}`,
+              top: Math.min(upperCoordinate, lowerCoordinate),
+              height: Math.max(3, Math.abs(lowerCoordinate - upperCoordinate)),
+              widthPercent: (bin.volume / maxVolume) * 100,
+              isPOC: bin.isPOC,
+            });
+          }
+        }
+
+        setVolumeProfileBars(profileBars);
+        animationFrame = undefined;
+      });
+    };
     const resizeObserver = new ResizeObserver(([entry]) => {
       chart.applyOptions({ width: entry.contentRect.width, height });
+      projectVolumeProfile();
     });
     const handleVisibleRangeChange = (range: LogicalRange | null): void => {
       onVisibleRangeChange(range === null ? null : { from: range.from, to: range.to });
@@ -109,12 +158,19 @@ export function StockChartClient({ data, height, overlays, onVisibleRangeChange 
     bollingerUpperSeriesRef.current = bollingerUpperSeries;
     bollingerMiddleSeriesRef.current = bollingerMiddleSeries;
     bollingerLowerSeriesRef.current = bollingerLowerSeries;
+    profileProjectionRef.current = projectVolumeProfile;
     resizeObserver.observe(container);
     chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
 
     return () => {
       resizeObserver.disconnect();
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
+
+      if (animationFrame !== undefined) {
+        cancelAnimationFrame(animationFrame);
+      }
+
+      profileProjectionRef.current = () => undefined;
       seriesRef.current = null;
       sma20SeriesRef.current = null;
       sma50SeriesRef.current = null;
@@ -137,7 +193,9 @@ export function StockChartClient({ data, height, overlays, onVisibleRangeChange 
     bollingerUpperSeriesRef.current?.setData(toLineData(bollinger.map(({ time, upper }) => ({ time, value: upper }))));
     bollingerMiddleSeriesRef.current?.setData(toLineData(bollinger.map(({ time, middle }) => ({ time, value: middle }))));
     bollingerLowerSeriesRef.current?.setData(toLineData(bollinger.map(({ time, lower }) => ({ time, value: lower }))));
+    profileBinsRef.current = calculateVolumeProfile(data);
     chartRef.current?.timeScale().fitContent();
+    profileProjectionRef.current();
   }, [data]);
 
   useEffect(() => {
@@ -149,5 +207,24 @@ export function StockChartClient({ data, height, overlays, onVisibleRangeChange 
     bollingerLowerSeriesRef.current?.applyOptions({ visible: overlays.bollinger });
   }, [overlays]);
 
-  return <div ref={containerRef} className="w-full overflow-hidden border border-white/10" style={{ height }} />;
+  return (
+    <div className="relative w-full overflow-hidden border border-white/10" style={{ height }}>
+      <div ref={containerRef} className="h-full w-full" />
+      <div aria-label="Volume Profile" className="pointer-events-none absolute inset-y-0 right-0 w-28">
+        {volumeProfileBars.map((bar) => (
+          <div
+            key={bar.id}
+            className={`absolute right-0 ${bar.isPOC ? "bg-gain/70" : "bg-slate-400/25"}`}
+            style={{ top: bar.top, height: bar.height, width: `${bar.widthPercent}%` }}
+          >
+            {bar.isPOC ? (
+              <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gain-bright">
+                POC
+              </span>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
