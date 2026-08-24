@@ -24,6 +24,15 @@ describe("calculateEMA", () => {
     ]);
   });
 
+  it("preserves precision for fractional seeds and recursive values", () => {
+    const result = calculateEMA(createCandles([2, 4, 8, 20]), 3);
+    const seed = 14 / 3;
+    const expectedNextValue = 20 * 0.5 + seed * 0.5;
+
+    expect(result[0].value).toBeCloseTo(seed, 12);
+    expect(result[1].value).toBeCloseTo(expectedNextValue, 12);
+  });
+
   it("returns an empty series until enough candles are available", () => {
     expect(calculateEMA(createCandles([10, 20]), 3)).toEqual([]);
   });
