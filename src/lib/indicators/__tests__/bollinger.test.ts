@@ -14,14 +14,24 @@ function createCandles(closes: number[]): CandleData[] {
 }
 
 describe("calculateBollingerBands", () => {
-  it("calculates population standard deviation bands for a known window", () => {
-    const [result] = calculateBollingerBands(createCandles([1, 2, 3]), 3);
+  it("calculates precise population-standard-deviation bands for rolling windows", () => {
+    const results = calculateBollingerBands(createCandles([1, 2, 3, 4]), 3);
     const populationStandardDeviation = Math.sqrt(2 / 3);
+    const [firstResult, secondResult] = results;
 
-    expect(result?.time).toBe(3);
-    expect(result?.middle).toBe(2);
-    expect(result?.upper).toBeCloseTo(2 + 2 * populationStandardDeviation, 12);
-    expect(result?.lower).toBeCloseTo(2 - 2 * populationStandardDeviation, 12);
+    expect(firstResult?.time).toBe(3);
+    expect(firstResult?.middle).toBe(2);
+    expect(firstResult?.upper).toBeCloseTo(2 + 2 * populationStandardDeviation, 12);
+    expect(firstResult?.lower).toBeCloseTo(2 - 2 * populationStandardDeviation, 12);
+    expect((firstResult!.upper - firstResult!.middle) / 2).toBeCloseTo(
+      populationStandardDeviation,
+      12,
+    );
+
+    expect(secondResult?.time).toBe(4);
+    expect(secondResult?.middle).toBe(3);
+    expect(secondResult?.upper).toBeCloseTo(3 + 2 * populationStandardDeviation, 12);
+    expect(secondResult?.lower).toBeCloseTo(3 - 2 * populationStandardDeviation, 12);
   });
 
   it("returns no bands until a complete window is available", () => {
