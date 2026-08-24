@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { stockColumns } from "@/components/grid/columns";
+import { ContextMenu, type ContextMenuPosition } from "@/components/grid/ContextMenu";
 import type { Stock } from "@/types/stock";
 
 export const GRID_ROW_HEIGHT = 36;
@@ -20,11 +21,25 @@ interface DataGridProps {
   data: Stock[];
   columns?: ColumnDef<Stock>[];
   height?: number;
+  onOpenChart?: (stock: Stock) => void;
+  onToggleWatchlist?: (stock: Stock) => void;
+  onFilterSector?: (sector: string) => void;
 }
 
-export function DataGrid({ data, columns = stockColumns, height = 600 }: DataGridProps) {
+export function DataGrid({
+  data,
+  columns = stockColumns,
+  height = 600,
+  onOpenChart,
+  onToggleWatchlist,
+  onFilterSector,
+}: DataGridProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [contextMenu, setContextMenu] = useState<{
+    stock: Stock;
+    position: ContextMenuPosition;
+  } | null>(null);
   const table = useReactTable({
     data,
     columns,
@@ -84,6 +99,13 @@ export function DataGrid({ data, columns = stockColumns, height = 600 }: DataGri
                 key={row.id}
                 aria-rowindex={virtualRow.index + 2}
                 className="absolute grid h-9 w-full items-center border-b border-white/5 bg-financial-card hover:bg-white/5"
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  setContextMenu({
+                    stock: row.original,
+                    position: { x: event.clientX, y: event.clientY },
+                  });
+                }}
                 style={{
                   gridTemplateColumns,
                   transform: `translateY(${virtualRow.start}px)`,
@@ -104,6 +126,16 @@ export function DataGrid({ data, columns = stockColumns, height = 600 }: DataGri
           })}
         </tbody>
       </table>
+      {contextMenu !== null ? (
+        <ContextMenu
+          stock={contextMenu.stock}
+          position={contextMenu.position}
+          onClose={() => setContextMenu(null)}
+          onOpenChart={onOpenChart}
+          onToggleWatchlist={onToggleWatchlist}
+          onFilterSector={onFilterSector}
+        />
+      ) : null}
     </div>
   );
 }
