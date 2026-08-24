@@ -3,7 +3,9 @@ import type {
   FilterCondition,
   FilterGroup,
   FilterNode,
+  FieldComparisonFilter,
   MultiSelectFilter,
+  NumericFilter,
   RangeFilter,
 } from "@/types/filter";
 import type { Stock } from "@/types/stock";
@@ -52,6 +54,23 @@ export function matchesFilterCondition(stock: Stock, condition: FilterCondition)
     case "equals": {
       const filter = condition.filter as BooleanFilter;
       return typeof value === "boolean" && value === filter.value;
+    }
+    case "lessThan": {
+      const filter = condition.filter as NumericFilter;
+      return typeof value === "number" && value < filter.value;
+    }
+    case "greaterThan": {
+      const filter = condition.filter as NumericFilter;
+      return typeof value === "number" && value > filter.value;
+    }
+    case "greaterThanField": {
+      const filter = condition.filter as FieldComparisonFilter;
+      const comparisonValue = stock[filter.field];
+      return (
+        typeof value === "number" &&
+        typeof comparisonValue === "number" &&
+        value > comparisonValue * filter.multiplier
+      );
     }
   }
 }

@@ -31,6 +31,7 @@ function createStock(symbol: string, rsi14: number, sector = "Technology"): Stoc
     eps: 5,
     promoterHolding: 50,
     freeCashFlow: 1_000,
+    salesGrowth: 10,
     rsi14,
     sma20: 100,
     sma50: 100,

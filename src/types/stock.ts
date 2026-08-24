@@ -25,6 +25,7 @@ export interface Stock {
   eps: number;
   promoterHolding: number;
   freeCashFlow: number;
+  salesGrowth: number;
   rsi14: number;
   sma20: number;
   sma50: number;

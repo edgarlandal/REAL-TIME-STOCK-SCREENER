@@ -40,6 +40,7 @@ const stock: Stock = {
   eps: 5,
   promoterHolding: 50,
   freeCashFlow: 1_000,
+  salesGrowth: 10,
   rsi14: 55,
   sma20: 120,
   sma50: 120,
