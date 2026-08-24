@@ -16,12 +16,7 @@ type NumericStockField = {
 
 type TextStockField = "symbol" | "name" | "sector" | "industry" | "marketCapCategory";
 
-const integerFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const decimalFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-const compactFormatter = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 2,
-});
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -52,7 +47,12 @@ function SortableHeader({ column, label }: HeaderContext<Stock, unknown> & { lab
 }
 
 function sortableHeader(label: string) {
-  return (context: HeaderContext<Stock, unknown>) => <SortableHeader {...context} label={label} />;
+  const SortableHeaderRenderer = (context: HeaderContext<Stock, unknown>) => (
+    <SortableHeader {...context} label={label} />
+  );
+
+  SortableHeaderRenderer.displayName = `SortableHeader(${label})`;
+  return SortableHeaderRenderer;
 }
 
 function textColumn(accessorKey: TextStockField, label: string): ColumnDef<Stock> {

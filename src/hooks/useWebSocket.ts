@@ -65,7 +65,9 @@ export function useWebSocket(url: string, options: UseWebSocketOptions = {}): Us
     options.webSocketFactory ?? ((socketUrl) => new WebSocket(socketUrl)),
   );
 
-  onMessageRef.current = options.onMessage;
+  useEffect(() => {
+    onMessageRef.current = options.onMessage;
+  }, [options.onMessage]);
 
   const disconnect = useCallback(() => {
     manuallyDisconnectedRef.current = true;

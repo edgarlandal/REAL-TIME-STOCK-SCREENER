@@ -39,8 +39,10 @@ export function PriceAlerts({ stocks }: PriceAlertsProps) {
   const toastTimersRef = useRef(new Set<ReturnType<typeof setTimeout>>());
 
   useEffect(() => {
+    const toastTimers = toastTimersRef.current;
+
     return () => {
-      for (const timer of toastTimersRef.current) {
+      for (const timer of toastTimers) {
         clearTimeout(timer);
       }
     };
@@ -77,23 +79,27 @@ export function PriceAlerts({ stocks }: PriceAlertsProps) {
       return;
     }
 
-    const triggeredIds = new Set(triggeredAlerts.map(({ id }) => id));
-    setAlerts((currentAlerts) =>
-      currentAlerts.map((alert) => (triggeredIds.has(alert.id) ? { ...alert, triggered: true } : alert)),
-    );
+    const animationFrame = requestAnimationFrame(() => {
+      const triggeredIds = new Set(triggeredAlerts.map(({ id }) => id));
+      setAlerts((currentAlerts) =>
+        currentAlerts.map((alert) => (triggeredIds.has(alert.id) ? { ...alert, triggered: true } : alert)),
+      );
 
-    for (let index = 0; index < triggeredAlerts.length; index += 1) {
-      const alert = triggeredAlerts[index];
-      const toastId = `toast-${nextIdRef.current++}`;
-      const message = `${alert.symbol} alcanzó ${currencyFormatter.format(alert.currentPrice)} (${alert.condition === "above" ? ">=" : "<="} ${currencyFormatter.format(alert.targetPrice)})`;
+      for (let index = 0; index < triggeredAlerts.length; index += 1) {
+        const alert = triggeredAlerts[index];
+        const toastId = `toast-${nextIdRef.current++}`;
+        const message = `${alert.symbol} alcanzó ${currencyFormatter.format(alert.currentPrice)} (${alert.condition === "above" ? ">=" : "<="} ${currencyFormatter.format(alert.targetPrice)})`;
 
-      setToasts((currentToasts) => [...currentToasts, { id: toastId, message }]);
-      const timer = setTimeout(() => {
-        toastTimersRef.current.delete(timer);
-        setToasts((currentToasts) => currentToasts.filter((toast) => toast.id !== toastId));
-      }, 5_000);
-      toastTimersRef.current.add(timer);
-    }
+        setToasts((currentToasts) => [...currentToasts, { id: toastId, message }]);
+        const timer = setTimeout(() => {
+          toastTimersRef.current.delete(timer);
+          setToasts((currentToasts) => currentToasts.filter((toast) => toast.id !== toastId));
+        }, 5_000);
+        toastTimersRef.current.add(timer);
+      }
+    });
+
+    return () => cancelAnimationFrame(animationFrame);
   }, [alerts, stocks]);
 
   function addAlert(event: React.FormEvent<HTMLFormElement>): void {

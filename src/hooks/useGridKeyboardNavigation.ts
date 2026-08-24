@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type KeyboardEvent, type RefObject } from "react";
+import { useState, type KeyboardEvent, type RefObject } from "react";
 import type { Stock } from "@/types/stock";
 
 export interface GridKeyboardNavigationOptions {
@@ -31,12 +31,9 @@ export function useGridKeyboardNavigation({
   onOpenChart,
   onToggleWatchlist,
 }: GridKeyboardNavigationOptions): GridKeyboardNavigationResult {
-  const [selectedRowIndex, setSelectedRowIndex] = useState(0);
+  const [selectedRowIndexState, setSelectedRowIndex] = useState(0);
+  const selectedRowIndex = Math.min(selectedRowIndexState, Math.max(rows.length - 1, 0));
   const selectedStock = rows[selectedRowIndex];
-
-  useEffect(() => {
-    setSelectedRowIndex((currentIndex) => Math.min(currentIndex, Math.max(rows.length - 1, 0)));
-  }, [rows.length]);
 
   function selectRow(index: number): void {
     if (rows.length === 0) {
