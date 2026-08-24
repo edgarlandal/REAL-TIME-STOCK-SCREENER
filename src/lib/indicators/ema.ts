@@ -10,17 +10,19 @@ export function calculateEMA(data: CandleData[], period: number): EMAResult[] {
   }
 
   const multiplier = 2 / (period + 1);
+  const seedEndIndex = period - 1;
+  const firstRecursiveIndex = seedEndIndex + 1;
   let ema = 0;
 
-  for (let index = 0; index < period; index += 1) {
+  for (let index = 0; index <= seedEndIndex; index += 1) {
     ema += data[index].close;
   }
 
   ema /= period;
 
-  const results: EMAResult[] = [{ time: data[period - 1].time, value: ema }];
+  const results: EMAResult[] = [{ time: data[seedEndIndex].time, value: ema }];
 
-  for (let index = period; index < data.length; index += 1) {
+  for (let index = firstRecursiveIndex; index < data.length; index += 1) {
     ema = data[index].close * multiplier + ema * (1 - multiplier);
     results.push({ time: data[index].time, value: ema });
   }

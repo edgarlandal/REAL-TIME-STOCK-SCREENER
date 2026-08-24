@@ -24,6 +24,12 @@ describe("calculateEMA", () => {
     ]);
   });
 
+  it("uses exactly the first N candles for the seed before starting recurrence", () => {
+    const result = calculateEMA(createCandles([3, 6, 12]), 3);
+
+    expect(result).toEqual([{ time: 3, value: 7 }]);
+  });
+
   it("preserves precision for fractional seeds and recursive values", () => {
     const result = calculateEMA(createCandles([2, 4, 8, 20]), 3);
     const seed = 14 / 3;
