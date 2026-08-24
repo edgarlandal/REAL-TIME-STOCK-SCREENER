@@ -9,7 +9,7 @@ export interface CandleData {
 
 export interface SMAResult {
   time: number;
-  value: number;
+  value: number | null;
 }
 
 export interface EMAResult {
